@@ -1,0 +1,40 @@
+spring:
+ cloud:
+  gateway:
+   routes:
+   #Route Mapping
+    - id: USER-SERVICE                #RouteIdentifier (i.e)MicroService Name
+      uri: lb://USER-SERVICE          #Respective MicroService URL which needs to be Mapped (i.e)lb is LoadBalanced, @LoadBalanced must be annotated in main class
+      predicates:
+       - Path=/users/**               #Request Context Path Mapping
+      filters:                        #This is for Circuit Breaker (i.e)Hystrix we used
+       - name: CircuitBreaker            
+         args:
+          name: USER-SERVICE          #To which service it should redirect
+          fallbackuri: forward:/userServiceFallBack   #To which method in the mentioned service it should redirect
+   #Route Mapping    
+    - id: DEPARTMENT-SERVICE          #RouteIdentifier (i.e)MicroService Name
+      uri: lb://DEPARTMENT-SERVICE    #Respective MicroService URL which needs to be Mapped (i.e)lb is LoadBalanced, @LoadBalanced must be annotated in main class
+      predicates:
+       - Path=/departments/**         #Request Context Path Mapping
+      filters:                        #This is for Circuit Breaker (i.e)Hystrix we used
+       - name: CircuitBreaker         #Circuit Breaker
+         args:
+          name: DEPARTMENT-SERVICE    #To which service it should redirect
+          fallbackuri: forward:/departmentServiceFallBack   #To which method in the mentioned service it should redirect
+       
+#Hystrix Configuration for '4'Seconds
+hystrix:
+ command:
+  fallbackcmd:
+   execution:
+    isolation:
+     thread:
+      timeoutInMilliseconds: 4000
+      
+#Configuration for Actuator. To use this informtion in Hystrix DashBoard (i.e) Actuator endpoint enabled via following property: http://localhost:9191/actuator/hystrix.stream
+management:
+  endpoints:
+    web:
+      exposure:
+        include: hystrix.stream
